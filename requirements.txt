@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+python-multipart
+oracledb
+qdrant-client
+openai
+httpx
+pandas
+numpy
+smbprotocol
+smbclient
+pywin32
+PyMuPDF
+PyPDF2
+python-docx
+python-pptx
+Pillow
