@@ -45,43 +45,6 @@ FastAPI application
     +-- OpenAI-compatible API: chat, page analysis, profiling, embeddings
 ```
 
-## Project Structure
-
-```text
-.
-|-- app.py
-|-- choices.py
-|-- config/
-|   |-- db.py
-|   |-- llm.py
-|   `-- share_drive.py
-|-- routers/
-|   |-- chat.py
-|   |-- dms.py
-|   `-- documents.py
-|-- services/
-|   |-- chat_service.py
-|   |-- db_service.py
-|   |-- embed_service.py
-|   |-- preprocess_service.py
-|   |-- qdrant_service.py
-|   `-- share_service.py
-`-- static/
-    |-- app.js
-    |-- index.html
-    `-- styles.css
-```
-
-Key files:
-
-- `app.py`: FastAPI entry point, router registration, and static UI serving.
-- `choices.py`: Configurable metadata options used by upload and filtering.
-- `routers/dms.py`: Document upload, listing, preprocessing, and metadata endpoints.
-- `routers/chat.py`: Chat, suggestions, source loading, and share browsing endpoints.
-- `services/preprocess_service.py`: Document conversion, page analysis, chunking, profiling, and vector ingestion.
-- `services/chat_service.py`: Retrieval pipeline and final answer generation.
-- `config/`: Environment-driven database, LLM, Qdrant, and share-drive configuration.
-
 ## Metadata Customization
 
 This project includes metadata fields named `process`, `module`, `equipment_type`, and `package`.
