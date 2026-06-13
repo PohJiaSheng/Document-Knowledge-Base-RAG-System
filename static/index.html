@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Knowledge Base RAG System</title>
+    <meta name="description" content="Document management and AI-powered knowledge base chat.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.2/marked.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="ambient-orb orb-1"></div>
+        <div class="ambient-orb orb-2"></div>
+        <div class="ambient-orb orb-3"></div>
+    </div>
+
+    <div id="app" class="app-container">
+
+        <!-- ── Global Tab Bar ───────────────────────────────────── -->
+        <nav class="global-tabs" id="globalTabs">
+            <div class="logo-group" style="margin-right:auto;">
+                <div class="logo-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                    </svg>
+                </div>
+                <span class="logo-text">RAG<span class="logo-accent">KB</span></span>
+            </div>
+            <button class="tab-btn active" id="tabChat"   onclick="switchTab('chat')">💬 Chat</button>
+            <button class="tab-btn"        id="tabDms"    onclick="switchTab('dms')">📤 Document Management</button>
+        </nav>
+
+        <!-- ══ CHAT PANEL ══════════════════════════════════════════ -->
+        <div id="panelChat" class="panel-wrapper">
+
+            <!-- ── Filter Selection Overlay ─────────────────────── -->
+            <div class="selection-overlay" id="filterOverlay">
+                <div class="selection-panel">
+                    <div class="selection-header">
+                        <h2 class="header-title" style="margin-bottom:6px;">Configure Your Context</h2>
+                        <p class="selection-intro">Select your filters to narrow the knowledge base. You can choose multiple values or leave a category as <em>Any</em>.</p>
+                    </div>
+                    <div class="selection-body" id="filterSelectionBody">
+                        <div class="selection-loading">
+                            <div class="loading-dots"><span></span><span></span><span></span></div>
+                            <p>Loading filter options…</p>
+                        </div>
+                    </div>
+                    <div class="selection-footer">
+                        <span class="selection-summary" id="filterSummary">No filters selected — all documents will be considered.</span>
+                        <button class="start-chat-btn" id="startChatBtn" onclick="confirmFilters()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Start Chat
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── KB Sidebar ──────────────────────────────────── -->
+            <aside class="kb-sidebar">
+                <div class="kb-sidebar-inner">
+
+                    <!-- Loaded Sources -->
+                    <div class="kb-section">
+                        <div class="kb-section-header">
+                            <span class="kb-section-title">📚 Knowledge Base</span>
+                            <span class="kb-badge" id="kbBadge">0</span>
+                        </div>
+                        <div id="kbSourcesList" class="kb-sources-list">
+                            <p class="kb-empty-hint">Load files from ShareDrive below</p>
+                        </div>
+                    </div>
+
+                    <!-- ShareDrive Browser -->
+                    <div class="kb-section kb-section-grow">
+                        <div class="kb-section-header">
+                            <span class="kb-section-title">📁 ShareDrive</span>
+                            <button class="kb-icon-btn" onclick="refreshShareList()" title="Refresh">↻</button>
+                        </div>
+                        <div class="kb-path-bar" id="sharePathBar">
+                            <button class="kb-path-root" onclick="navigateShare('')">Root</button>
+                            <span id="sharePathSegments"></span>
+                        </div>
+                        <div id="shareFilesList" class="kb-files-list">
+                            <div class="kb-loading"><span></span><span></span><span></span></div>
+                        </div>
+                        <div id="shareLoadStatus" class="kb-load-status"></div>
+                    </div>
+
+                </div>
+            </aside>
+
+            <!-- ── Main Chat Area ───────────────────────────────── -->
+            <main class="chat-main">
+                <header class="chat-header">
+                    <div class="header-left">
+                        <div>
+                            <h2 class="header-title">Chat with Knowledge Base</h2>
+                            <p class="header-subtitle" id="headerSubtitle">Load documents from ShareDrive to begin</p>
+                        </div>
+                    </div>
+                    <div class="header-right" style="display:flex;align-items:center;gap:10px;">
+                        <div id="activeFilterTags" style="display:flex;flex-wrap:wrap;gap:6px;max-width:400px;"></div>
+                        <button class="dms-btn-secondary" id="changeFiltersBtn" onclick="openFilterOverlay()" style="white-space:nowrap;" title="Change filter settings">
+                            ⚙️ Change Filters
+                        </button>
+                        <div class="status-badge" id="statusBadge">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Ready</span>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message system-message fade-in">
+                        <div class="message-avatar system-avatar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-bubble system-bubble">
+                                <p>Welcome to <strong>Document Knowledge Base</strong>.</p>
+                                <p>Load documents from ShareDrive on the left, then ask me anything about their contents.</p>
+                                <div class="feature-grid">
+                                    <div class="feature-card"><span class="feature-icon">📄</span><span>PDF, DOCX, PPTX, TXT</span></div>
+                                    <div class="feature-card"><span class="feature-icon">🖼️</span><span>Images analysed by AI</span></div>
+                                    <div class="feature-card"><span class="feature-icon">📁</span><span>Browse ShareDrive files</span></div>
+                                    <div class="feature-card"><span class="feature-icon">💬</span><span>Ask questions naturally</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="suggestionsArea" class="suggestions-area" style="display:none;">
+                    <p class="suggestions-label">Try asking:</p>
+                    <div id="suggestionsContainer" class="suggestions-container"></div>
+                </div>
+
+                <div class="chat-input-area">
+                    <div class="input-container">
+                        <textarea id="chatInput" class="chat-input" placeholder="Set your filters above to begin chatting…" rows="1"
+                            onkeydown="handleInputKeydown(event)" oninput="autoResize(this)" disabled></textarea>
+                        <button id="sendBtn" class="send-btn" onclick="sendMessage()" aria-label="Send message" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </div>
+                    <p class="input-hint">Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- ══ DMS PANEL ═══════════════════════════════════════════ -->
+        <div id="panelDms" class="panel-wrapper" style="display:none;">
+            <main class="dms-main">
+                <header class="chat-header">
+                    <div class="header-left">
+                        <h2 class="header-title">Document Management System</h2>
+                        <p class="header-subtitle">Upload → Preprocess → Embed → Chat</p>
+                    </div>
+                </header>
+
+                <div class="dms-body">
+
+                    <!-- Upload section -->
+                    <section class="dms-card">
+                        <h3 class="dms-section-title">1. Upload Document</h3>
+
+                        <div class="dms-drop-zone" id="dropZone">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <p>Drag &amp; drop PDF / DOC / DOCX or <label class="file-label" for="fileInput">browse</label></p>
+                            <input type="file" id="fileInput" accept=".pdf,.doc,.docx" style="display:none">
+                            <p id="selectedFileName" class="selected-file-name"></p>
+                        </div>
+
+                        <div class="dms-field" style="margin-bottom:12px;">
+                            <label>Document Title <span class="dms-required">*</span></label>
+                            <input type="text" id="metaTitle" class="dms-text-input" placeholder="Enter a descriptive title for this document" maxlength="500">
+                        </div>
+
+                        <div class="dms-meta-grid">
+                            <div class="dms-field">
+                                <label>Process <span class="dms-required">*</span></label>
+                                <select id="metaProcess"><option value="">— Select process —</option></select>
+                            </div>
+                            <div class="dms-field">
+                                <label>Module <span class="dms-required">*</span></label>
+                                <div class="multi-dd" id="metaModule">
+                                    <button type="button" class="multi-dd-trigger" onclick="toggleMultiDd('metaModule')">
+                                        <span class="multi-dd-label muted" id="metaModule-label">Select modules…</span>
+                                        <span class="multi-dd-arrow">▾</span>
+                                    </button>
+                                    <div class="multi-dd-panel" id="metaModule-panel"></div>
+                                </div>
+                            </div>
+                            <div class="dms-field">
+                                <label>Equipment Type</label>
+                                <div class="multi-dd" id="metaEquipment">
+                                    <button type="button" class="multi-dd-trigger" onclick="toggleMultiDd('metaEquipment')">
+                                        <span class="multi-dd-label muted" id="metaEquipment-label">None selected</span>
+                                        <span class="multi-dd-arrow">▾</span>
+                                    </button>
+                                    <div class="multi-dd-panel" id="metaEquipment-panel"></div>
+                                </div>
+                            </div>
+                            <div class="dms-field">
+                                <label>Package</label>
+                                <div class="multi-dd" id="metaPackage">
+                                    <button type="button" class="multi-dd-trigger" onclick="toggleMultiDd('metaPackage')">
+                                        <span class="multi-dd-label muted" id="metaPackage-label">None selected</span>
+                                        <span class="multi-dd-arrow">▾</span>
+                                    </button>
+                                    <div class="multi-dd-panel" id="metaPackage-panel"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="dms-btn-primary" id="uploadBtn" onclick="dmsUpload()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Upload &amp; Process
+                        </button>
+                        <div id="uploadStatus" class="dms-status"></div>
+                    </section>
+
+                    <!-- Document list section -->
+                    <section class="dms-card">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                            <h3 class="dms-section-title" style="margin:0">2. Manage Documents</h3>
+                            <button class="dms-btn-secondary" onclick="loadDocuments()">↻ Refresh</button>
+                        </div>
+                        <div id="docTableWrapper" class="doc-table-wrapper">
+                            <p class="dms-hint">Loading documents…</p>
+                        </div>
+                        <div id="preprocessStatus" class="dms-status"></div>
+                    </section>
+
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
